@@ -1,123 +1,138 @@
-# スライドプリセット ガイド
+# デザインテンプレート (templates/)
 
-`scripts/presets/` に格納されたビジネス向けカラーテーマ集です。  
-`template.js` の色・フォントを一括で切り替えることで、  
-対象業界・シーンに最適化されたスライドを素早く生成できます。
+日本のビジネス感覚に合わせた **18種のデザインテンプレート** です。  
+カラーだけでなく **レイアウト構造（スタイル）も異なる** 6種のデザインパターンに、  
+日本向けの配色を掛け合わせています。
+
+---
+
+## ファイル構成
+
+```
+templates/
+├── index.js          エントリーポイント（API）
+├── definitions.js    18テンプレートの定義（色・スタイル・用途）
+├── generate.js       PPTX生成スクリプト
+└── README.md         このファイル
+```
+
+---
+
+## 18テンプレート一覧
+
+### A. Natural — 自然色ベース
+
+| ID | 名前 | スタイル | 主な用途 |
+|----|------|----------|----------|
+| A1 | Linen & Sage | McKinsey | 経営戦略・ESG・サステナビリティ |
+| A2 | Stone & Mist | BCG | 戦略発表・官公庁・汎用 |
+| A3 | Warm Pebble | Editorial | ブランド戦略・商品発表 |
+| A4 | Moss & Cream | Waves | 事業計画・SDGs・地域創生 |
+| A5 | Birch & Ash | Feminine | ウェルネス・HR・コーチング |
+
+### B. Navy — ビジネスライク（紺系）
+
+| ID | 名前 | スタイル | 主な用途 |
+|----|------|----------|----------|
+| B1 | Deep Navy | McKinsey | 経営報告・IR・金融 |
+| B2 | Indigo Slate | BCG | 戦略コンサル・DX・IT |
+| B3 | Navy & Silver | Editorial | 年次報告書・プレミアム商品 |
+| B4 | Steel Horizon | Waves | 製造業・インフラ・建設 |
+| B5 | Midnight Blue | Bold | ピッチ・事業発表・スタートアップ |
+
+### C. Warm — 温かみのあるアクセント
+
+| ID | 名前 | スタイル | 主な用途 |
+|----|------|----------|----------|
+| C1 | Terracotta & Linen | Feminine | コーチング・女性向けサービス |
+| C2 | Sage & Sienna | McKinsey | 農業・食品・地方創生 |
+| C3 | Dusty Rose & Grey | Waves | ファッション・美容・ライフスタイル |
+| C4 | Warm Slate | Editorial | 建築・不動産・ラグジュアリー |
+
+### D. Energetic — おとなしめ元気系
+
+| ID | 名前 | スタイル | 主な用途 |
+|----|------|----------|----------|
+| D1 | Amber & Navy | BCG | 営業資料・新規開拓・製品ローンチ |
+| D2 | Mustard & Stone | Bold | スタートアップ・ピッチ |
+| D3 | Sakura & Charcoal | Feminine | 観光・日本文化発信・ブライダル |
+| D4 | Teal & Sand | Waves | 医療・教育・観光 |
+
+---
+
+## 6種のデザインスタイル
+
+| スタイル | 特徴 | 向いている場面 |
+|----------|------|----------------|
+| **McKinsey** | 左縦帯(30%) + 白ベース | 経営・コンサル・重厚な印象 |
+| **BCG** | 上部バー + 左右2カラム | 戦略提案・データ重視 |
+| **Bold** | 全面ダーク + 超大文字 | ピッチ・大型スクリーン |
+| **Feminine** | パステル大円形 + 余白 | コーチング・ブランド |
+| **Editorial** | 雑誌風非対称2分割 | クリエイティブ・年次報告 |
+| **Waves** | 白背景 + 下部波ライン | 幅広いビジネス全般 |
 
 ---
 
 ## 使い方
 
+### API（index.js）
+
 ```js
-var t       = require("./template.js");
-var presets = require("./presets/index.js");
+var templates = require("./templates");
 
-// 1. slug で取得して適用
-var preset = presets.get("ocean_teal");
-presets.apply(preset, t);
+// IDで取得
+var t = templates.get("A1");
+console.log(t.name);        // "Linen & Sage"
+console.log(t.colors);      // { primary: "3D5A47", accent: "8FAE8B", ... }
 
-// 2. キーワード検索して適用
-var preset = presets.find("スタートアップ");
-presets.apply(preset, t);
+// キーワード検索
+templates.find("navy");           // Navy系テンプレートを返す
+templates.find("ESG");            // useCase/descriptionにマッチするものを返す
 
-// 3. あとは通常通りスライドを生成
-var pres = new t.pptxgen();
-t.addTitleSlide(pres, "タイトル", "サブタイトル", "作成者");
-// ...
+// カテゴリ・スタイル別
+templates.listByCategory("natural");    // A1〜A5
+templates.listByStyle("waves");         // A4, B4, C3, D4
+
+// 推薦（キーワード × スタイル）
+templates.recommend("医療", "waves");   // D4 Teal & Sand など
+```
+
+### PPTX生成
+
+```bash
+# 依存インストール
+npm install pptxgenjs sharp
+
+# 全18テンプレート生成
+node presets/templates/generate.js
+
+# IDを指定して1枚だけ
+node presets/templates/generate.js --id A1
+
+# カテゴリ指定
+node presets/templates/generate.js --category navy
+
+# スタイル指定 + 出力先指定
+node presets/templates/generate.js --style waves --out ./my-waves.pptx
 ```
 
 ---
 
-## プリセット一覧
+## フォントについて
 
-| # | slug | テーマ名 | 主な用途 | 主色 | アクセント |
-|---|------|----------|----------|------|------------|
-| 1 | `midnight_executive` | **Midnight Executive** | 経営報告 / IR / コンサル | ネイビー `#1E2761` | ゴールド `#C9A84C` |
-| 2 | `forest_strategy` | **Forest Strategy** | 戦略提案 / ESG / 事業計画 | フォレストグリーン `#2C5F2D` | モスグリーン `#97BC62` |
-| 3 | `coral_energy` | **Coral Energy** | ピッチデッキ / スタートアップ | ディープネイビー `#2F3C7E` | コーラル `#F96167` |
-| 4 | `ocean_teal` | **Ocean Teal** | IT / DX / SaaS | ディープティール `#065A82` | シーフォーム `#02C39A` |
-| 5 | `charcoal_minimal` | **Charcoal Minimal** | 汎用ビジネス / 社内報告 | チャコール `#36454F` | オレンジ `#E85D04` |
-| 6 | `berry_finance` | **Berry Finance** | 金融 / 保険 / 資産運用 | ディープベリー `#6D2E46` | ゴールド `#B8860B` |
-| 7 | `sage_wellness` | **Sage Wellness** | 医療 / HR / 教育 | セージグリーン `#5F8575` | テラコッタ `#C68B6E` |
-| 8 | `solar_orange` | **Solar Orange** | 営業提案 / 製品ローンチ | ダークチャコール `#1C1C1E` | オレンジ `#E65100` |
-| 9 | `royal_purple` | **Royal Purple** | ラグジュアリー / ブランド戦略 | ロイヤルパープル `#4A0E8F` | ウォームゴールド `#D4A017` |
-| 10 | `steel_blue` | **Steel Blue** | 製造 / 建設 / エンジニアリング | スチールブルー `#2B4F6E` | セーフティイエロー `#FDD835` |
+各テンプレートは `Noto Sans JP` または `Noto Serif JP` を指定しています。
+
+**PowerPointで最適に表示するために：**
+- [Noto Sans JP](https://fonts.google.com/noto/specimen/Noto+Sans+JP) をシステムにインストールしてください
+- 未インストールの場合、PowerPoint は **Meiryo / Yu Gothic / ヒラギノ角ゴ** に自動フォールバックします
 
 ---
 
-## テーマ選択ガイド
+## presetsとの違い
 
-### 業界別おすすめ
-
-| 業界 | おすすめプリセット |
-|------|-------------------|
-| 金融・銀行・保険 | `berry_finance` / `midnight_executive` |
-| コンサル・戦略 | `midnight_executive` / `forest_strategy` |
-| IT・テクノロジー・SaaS | `ocean_teal` / `charcoal_minimal` |
-| スタートアップ・VC | `coral_energy` / `solar_orange` |
-| 製造・建設・インフラ | `steel_blue` |
-| 医療・ヘルスケア・HR | `sage_wellness` |
-| 高級ブランド・ラグジュアリー | `royal_purple` |
-| ESG・サステナビリティ | `forest_strategy` / `sage_wellness` |
-| 営業・マーケティング | `solar_orange` / `coral_energy` |
-| 汎用 / どれか迷ったら | `charcoal_minimal` |
-
-### シーン別おすすめ
-
-| シーン | おすすめプリセット |
-|--------|-------------------|
-| 経営陣・取締役会向け | `midnight_executive` / `berry_finance` |
-| 投資家・IR向け | `midnight_executive` / `royal_purple` |
-| 新規事業提案 | `coral_energy` / `ocean_teal` |
-| 社内研修・教育 | `sage_wellness` / `charcoal_minimal` |
-| 製品説明・デモ | `ocean_teal` / `solar_orange` |
-| 年次報告・振り返り | `forest_strategy` / `midnight_executive` |
-
----
-
-## カラー構造（全プリセット共通）
-
-各プリセットの `colors` は `template.js` の `COLORS` に以下のように対応しています：
-
-| キー | template.js での役割 |
-|------|----------------------|
-| `DARK_GREEN` | 表紙・セクション扉・ヘッダーバー背景（**主色**） |
-| `CREAM_YELLOW` | バッジ・アクセントライン・番号（**アクセント色**） |
-| `LIGHT_GRAY` | コンテンツカード背景・テーブル偶数行（**背景色**） |
-| `TEXT_DARK` | 本文・見出しテキスト |
-| `TEXT_MEDIUM` | 補助テキスト・説明文 |
-| `TEXT_LIGHT` | 注釈・キャプション |
-| `WHITE` | 主色面上のテキスト・白抜きエリア |
-| `HIGHLIGHT_YELLOW` | 強調ボックス・特定ハイライト |
-
----
-
-## 企業別プリセットの追加方法
-
-新しいプリセットファイルを `scripts/presets/` に追加するだけで自動認識されます。
-
-```js
-// scripts/presets/mycompany.js
-module.exports = {
-  name: "My Company",
-  slug: "mycompany",            // ← ファイル名と揃えると管理しやすい
-  description: "自社カラー",
-  useCase: ["社内資料", "顧客向け提案"],
-  colors: {
-    DARK_GREEN: "003366",       // ← 主色（HEX、#なし）
-    CREAM_YELLOW: "FF6600",     // ← アクセント
-    LIGHT_GRAY: "F5F5F5",
-    TEXT_DARK: "1A1A1A",
-    TEXT_MEDIUM: "555555",
-    TEXT_LIGHT: "999999",
-    WHITE: "FFFFFF",
-    HIGHLIGHT_YELLOW: "FF6600"
-  },
-  chartColors: ["003366", "FF6600", /* ... */],
-  font: "Calibri",              // ← システムフォント名
-};
-```
-
----
-
-*最終更新: 2026-03-08 | Sincerely Slide Skill V2 対応*
+| | presets/ | templates/ |
+|--|----------|------------|
+| 役割 | 色テーマの定義 | レイアウト + 色の組み合わせ |
+| 管理単位 | カラーパレット10種 | デザインパターン18種 |
+| 出力 | `colors{}` オブジェクト | PPTX スライド |
+| 組み合わせ | templates に apply() で適用 | presetsの色をoverrideして活用可 |

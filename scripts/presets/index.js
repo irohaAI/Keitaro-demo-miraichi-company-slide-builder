@@ -1,124 +1,129 @@
 /**
- * 企業プリセット一覧
+ * デザインテンプレート — エントリーポイント
  *
- * 使い方:
- *   var presets = require("./presets");
- *   var exec = presets.get("midnight_executive");  // slug で取得
- *   var exec = presets.find("Executive");          // 名前で検索
- *   var list = presets.list();                     // 一覧取得
- *   presets.apply(exec, template);                 // template.js のカラーに適用
+ * presetsと同じAPIスタイルで使えます:
  *
- * ============================================================
- * 収録プリセット一覧 (v2 - ビジネス特化 10テーマ)
- * ============================================================
+ *   var templates = require("./templates");
  *
- *  slug                  name                  主な用途
- *  -------------------- -------------------- -------------------------
- *  midnight_executive    Midnight Executive   経営/IR/コンサル (ネイビー×ゴールド)
- *  forest_strategy       Forest Strategy      戦略/ESG/事業計画 (グリーン×サンド)
- *  coral_energy          Coral Energy         スタートアップ/ピッチ (コーラル×ネイビー)
- *  ocean_teal            Ocean Teal           IT/DX/SaaS (ティール×シーフォーム)
- *  charcoal_minimal      Charcoal Minimal     汎用ビジネス (チャコール×オレンジ)
- *  berry_finance         Berry Finance        金融/保険/IR (ベリー×クリーム)
- *  sage_wellness         Sage Wellness        医療/HR/教育 (セージ×テラコッタ)
- *  solar_orange          Solar Orange         営業/マーケ/製品ローンチ (オレンジ×ダーク)
- *  royal_purple          Royal Purple         ラグジュアリー/ブランド (パープル×ゴールド)
- *  steel_blue            Steel Blue           製造/建設/エンジニア (スチールブルー×イエロー)
- *
- *  ※ 企業別プリセット (例: docomo) も同フォルダに格納可能
- * ============================================================
+ *   templates.get("A1")                    // ID で取得
+ *   templates.find("navy")                 // カテゴリ・スタイル・名前で検索
+ *   templates.list()                       // 全テンプレート一覧
+ *   templates.listByCategory("natural")    // カテゴリ別一覧
+ *   templates.listByStyle("waves")         // スタイル別一覧
+ *   templates.recommend("環境", "waves")   // キーワード×スタイルで推薦
  */
 
-var fs = require("fs");
-var path = require("path");
+"use strict";
 
-// プリセットファイルを自動読み込み（index.js 以外の .js）
-var presetsDir = __dirname;
-var presetMap = {};
-
-fs.readdirSync(presetsDir).forEach(function (file) {
-  if (file === "index.js" || !file.endsWith(".js")) return;
-  var preset = require(path.join(presetsDir, file));
-  presetMap[preset.slug] = preset;
-});
+var TEMPLATES = require("./definitions");
 
 /**
- * slug で取得
+ * IDでテンプレートを取得 (例: "A1", "B3")
+ * @param {string} id
+ * @returns {object|null}
  */
-function get(slug) {
-  return presetMap[slug] || null;
+function get(id) {
+  return TEMPLATES.find(function(t) {
+    return t.id.toLowerCase() === id.toLowerCase();
+  }) || null;
 }
 
 /**
- * 名前（部分一致）で検索
- * name / slug / description / useCase いずれかにマッチ
+ * キーワードで検索（名前・カテゴリ・スタイル・useCase・description を対象）
+ * @param {string} keyword
+ * @returns {object[]}
  */
-function find(query) {
-  var q = query.toLowerCase();
-  var keys = Object.keys(presetMap);
-  for (var i = 0; i < keys.length; i++) {
-    var p = presetMap[keys[i]];
-    if (
-      p.slug.toLowerCase().indexOf(q) !== -1 ||
-      p.name.toLowerCase().indexOf(q) !== -1 ||
-      (p.description && p.description.toLowerCase().indexOf(q) !== -1) ||
-      (p.useCase && p.useCase.some(function(uc) { return uc.toLowerCase().indexOf(q) !== -1; }))
-    ) {
-      return p;
-    }
-  }
-  return null;
-}
-
-/**
- * 一覧取得（用途検索付き）
- */
-function list() {
-  return Object.keys(presetMap).map(function (key) {
-    var p = presetMap[key];
-    return {
-      slug: p.slug,
-      name: p.name,
-      description: p.description || "",
-      useCase: p.useCase || []
-    };
+function find(keyword) {
+  var kw = keyword.toLowerCase();
+  return TEMPLATES.filter(function(t) {
+    return (
+      t.id.toLowerCase().includes(kw) ||
+      t.name.toLowerCase().includes(kw) ||
+      t.nameJa.includes(keyword) ||
+      t.category.toLowerCase().includes(kw) ||
+      t.style.toLowerCase().includes(kw) ||
+      t.description.includes(keyword) ||
+      t.useCase.some(function(u) { return u.includes(keyword); })
+    );
   });
 }
 
 /**
- * 用途から最適プリセットを推薦
- * @param {string} keyword - 用途キーワード (例: "金融", "スタートアップ", "医療")
- * @returns {object|null} 最適プリセット
+ * 全テンプレート一覧を返す
+ * @returns {object[]}
  */
-function recommend(keyword) {
-  return find(keyword);
+function list() {
+  return TEMPLATES.slice();
 }
 
 /**
- * template.js の COLORS / CHART_COLORS / FACE に適用
- * ※ template.js の module.exports を渡す
+ * カテゴリ別一覧
+ * @param {"natural"|"navy"|"warm"|"energetic"} category
+ * @returns {object[]}
  */
-function apply(preset, template) {
-  if (!preset || !template) return;
-  if (preset.colors && template.COLORS) {
-    Object.keys(preset.colors).forEach(function (key) {
-      if (template.COLORS[key] !== undefined) {
-        template.COLORS[key] = preset.colors[key];
-      }
-    });
+function listByCategory(category) {
+  return TEMPLATES.filter(function(t) {
+    return t.category === category;
+  });
+}
+
+/**
+ * スタイル別一覧
+ * @param {"mckinsey"|"bcg"|"bold"|"feminine"|"editorial"|"waves"} style
+ * @returns {object[]}
+ */
+function listByStyle(style) {
+  return TEMPLATES.filter(function(t) {
+    return t.style === style;
+  });
+}
+
+/**
+ * キーワードとスタイルでテンプレートを推薦（最大3件）
+ * @param {string} keyword  用途・業種キーワード
+ * @param {string} [style]  スタイル指定（省略可）
+ * @returns {object[]}
+ */
+function recommend(keyword, style) {
+  var candidates = find(keyword);
+  if (style) {
+    var filtered = candidates.filter(function(t) { return t.style === style; });
+    if (filtered.length > 0) candidates = filtered;
   }
-  if (preset.chartColors && template.CHART_COLORS) {
-    template.CHART_COLORS = preset.chartColors;
-  }
-  if (preset.font && template.FACE !== undefined) {
-    template.FACE = preset.font;
-  }
+  return candidates.slice(0, 3);
+}
+
+/**
+ * テンプレートのカラー定義をプリセット形式で出力
+ * （presets/index.js の apply() と組み合わせて使う）
+ * @param {object} template
+ * @returns {object}  { primary, accent, bg, ... }
+ */
+function toPresetColors(template) {
+  return {
+    primary:  template.colors.primary,
+    accent:   template.colors.accent,
+    white:    template.colors.white,
+    bg:       template.colors.bg,
+    pale:     template.colors.pale  || template.colors.bg,
+    mid:      template.colors.mid,
+    light:    template.colors.light,
+    text:     template.colors.text,
+    dark:     template.colors.dark,
+    font:     template.font,
+  };
 }
 
 module.exports = {
-  get: get,
-  find: find,
-  list: list,
-  recommend: recommend,
-  apply: apply,
+  get:             get,
+  find:            find,
+  list:            list,
+  listByCategory:  listByCategory,
+  listByStyle:     listByStyle,
+  recommend:       recommend,
+  toPresetColors:  toPresetColors,
+
+  // カテゴリ・スタイルの定数
+  CATEGORIES: ["natural", "navy", "warm", "energetic"],
+  STYLES:     ["mckinsey", "bcg", "bold", "feminine", "editorial", "waves"],
 };
